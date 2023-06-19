@@ -1,5 +1,4 @@
 import express from "express";
-//import mongo, { MongoClient, ServerApiVersion } from "mongodb";
 import mongoose from "mongoose";
 import cors from "cors";
 import bcrypt from "bcrypt";
@@ -40,21 +39,40 @@ mongoose
 
 const predefinedUsers = async () => {
   const hashedPassword1 = await bcrypt.hash("abc", 10);
-  const employee1 = new Employee({
-    username: "Gordan",
-    password: hashedPassword1,
-  });
+  const existingEmployee = await Employee.findOne({ username: "Gordan" });
+  if (!existingEmployee) {
+    const employee1 = new Employee({
+      username: "Gordan",
+      password: hashedPassword1,
+    });
+    await employee1.save();
+  }
 
   const hashedPassword2 = await bcrypt.hash("eric", 10);
-  const owner = new Owner({
+  const existingOwner = await Owner.findOne({
     name: "Eric",
     surname: "Trubilo",
-    password: hashedPassword2,
-    pool_id: "abc123",
   });
+  if (!existingOwner) {
+    const owner = new Owner({
+      name: "Eric",
+      surname: "Trubilo",
+      password: hashedPassword2,
+      pool_id: "abc123",
+    });
+    await owner.save();
+  }
 
-  await employee1.save();
-  await owner.save();
+  const hashedPassword3 = await bcrypt.hash("abcabc", 10);
+  const existingEmployee2 = await Employee.findOne({ username: "Pero" });
+  if (!existingEmployee2) {
+    const employee2 = new Employee({
+      username: "Gordan123",
+      password: hashedPassword3,
+    });
+    await employee2.save();
+  }
+
   console.log("Spremljeni korisnici");
 };
 
@@ -99,32 +117,6 @@ app.post("/owner/login", async (req, res) => {
 
   res.status(200).json({ message: "Vlasnik uspješno prijavljen!" });
 });
-
-/*app.post("/login", async (req, res) => {
-  const { username, password, userType } = req.body;
-
-  let user;
-
-  if (userType === "employee") {
-    user = await Employee.findOne({ username: username });
-  } else if (userType === "owner") {
-    user = await Owner.findOne({ username: username });
-  } else {
-    return res.status(400).json({ message: "Ne postoji takav korisnik!" });
-  }
-
-  if (!user) {
-    return res.status(400).json({ message: "Korisnik nije pronađen!" });
-  }
-
-  const passwordMatch = await bcrypt.compare(password, user.password);
-  if (!passwordMatch) {
-    return res.status(400).json({ message: "Pogrešna lozinka!" });
-  }
-
-  res.status(200).json({ message: "Login successful!" });
-});
-*/
 
 app.post(
   "/pool",
@@ -237,11 +229,9 @@ app.post("/fault", async (req, res) => {
 
     await fault.save();
 
-    res
-      .status(200)
-      .json({
-        message: "Informacije o kvaru/nedostatku uspješno prijavljene!",
-      });
+    res.status(200).json({
+      message: "Informacije o kvaru/nedostatku uspješno prijavljene!",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal Server Error" });
@@ -281,4 +271,12 @@ app.put("/pool/:id", async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Internal Server Error" });
   }
+});
+
+app.post("/employee/logout", async (req, res) => {
+  res.status(200).json({ message: "Zaposlenik uspješno odjavljen!" });
+});
+
+app.post("/owner/logout", async (req, res) => {
+  res.status(200).json({ message: "Vlasnik uspješno odjavljen" });
 });
