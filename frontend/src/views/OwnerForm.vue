@@ -36,9 +36,12 @@
           required
         />
       </div>
-      <div>
+      <div class="form-buttons">
         <button class="submit-button" type="submit">
           Podnesi kvar/nedostatak
+        </button>
+        <button class="submit-button logout-button" @click.prevent="logout">
+          Odjavi se
         </button>
       </div>
     </form>
@@ -62,20 +65,19 @@ export default {
   },
   methods: {
     async submitFault() {
-      try {
-        const response = await axios.post("/fault", this.fault);
-        if (response.data.message === "Fault information saved successfully!") {
-          this.fault = {
-            pool: "",
-            owner: "",
-            description: "",
-            dateReported: "",
-            reportedBy: "",
-          };
-        }
-      } catch (error) {
-        console.error(error);
+      const response = await axios.post("/fault", this.fault);
+      if (response.data.message === "Fault information saved successfully!") {
+        this.fault = {
+          pool: "",
+          owner: "",
+          description: "",
+          dateReported: "",
+          reportedBy: "",
+        };
       }
+    },
+    logout() {
+      this.$router.push("/login");
     },
   },
 };
@@ -105,6 +107,12 @@ export default {
   border-radius: 5px;
 }
 
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1em;
+}
+
 .submit-button {
   background-color: #187bcd;
   color: #fff;
@@ -119,5 +127,14 @@ export default {
 
 .submit-button:hover {
   background-color: #1060a3;
+}
+
+.logout-button {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 5px;
 }
 </style>

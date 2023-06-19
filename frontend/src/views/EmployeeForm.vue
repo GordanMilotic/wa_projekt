@@ -5,17 +5,14 @@
         <label>Šifra bazena:</label>
         <input type="text" v-model="name" />
       </div>
-
       <div class="form-input text_input">
         <label>PH razina:</label>
         <input type="text" v-model="phLevel" />
       </div>
-
       <div class="form-input text_input">
         <label>CL razina:</label>
         <input type="text" v-model="clLevel" />
       </div>
-
       <label>Tehnike čiščenja:</label>
       <div
         class="cleaning-methods"
@@ -32,7 +29,6 @@
           {{ method }}
         </label>
       </div>
-
       <label class="poured">Doziranje kemije:</label>
       <select v-model="chemicalsPoured" class="form-input">
         <option disabled value="">Please select one</option>
@@ -40,16 +36,14 @@
         <option>PH Plus</option>
         <option>Bez kemije</option>
       </select>
-
       <div class="form-input text_input">
         <label>Količina kemije (litre):</label>
         <input
           type="text"
           v-model="chemicalsQuantity"
-          :disabled="!chemicalsPoured || chemicalsPoured === 'Bez kemije'"
+          :disabled="chemicalsPoured === 'Bez kemije'"
         />
       </div>
-
       <label>Slike:</label>
       <div v-for="index in 3" :key="index">
         <input
@@ -64,8 +58,10 @@
           v-if="picture[index - 1]"
         />
       </div>
-
-      <button type="submit" class="submit-button">Podnesi</button>
+      <div class="form-buttons">
+        <button type="submit" class="submit-button">Podnesi</button>
+        <button @click.prevent="logout" class="logout-button">Log out</button>
+      </div>
     </form>
   </div>
 </template>
@@ -94,7 +90,6 @@ export default {
       }
     },
     async submitForm() {
-      // Input Validation
       if (
         isNaN(this.phLevel) ||
         isNaN(this.clLevel) ||
@@ -118,8 +113,15 @@ export default {
       });
 
       const response = await axios.post("/pool", formData);
-
       console.log(response.data);
+    },
+    async logout() {
+      try {
+        await axios.post("http://localhost:4001/employee/logout");
+        this.$router.push("/login");
+      } catch (err) {
+        console.error(err);
+      }
     },
   },
 };
@@ -136,19 +138,21 @@ export default {
   color: #000;
   font-family: Arial, sans-serif;
 }
-
 .form-input {
   display: block;
   margin-bottom: 1em;
 }
-
 .form-input input {
   width: 100%;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 5px;
 }
-
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1em;
+}
 .submit-button {
   background-color: #187bcd;
   color: #fff;
@@ -158,19 +162,28 @@ export default {
   cursor: pointer;
   transition: background-color 0.3s ease;
   display: inline-block;
-  margin-top: 1em;
 }
-
 .submit-button:hover {
   background-color: #1060a3;
 }
-
+.logout-button {
+  background-color: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: inline-block;
+}
+.logout-button:hover {
+  background-color: #c0392b;
+}
 .pool-form img {
   display: block;
   margin-top: 10px;
   margin-bottom: 10px;
 }
-
 .poured {
   margin-top: 1em;
 }
