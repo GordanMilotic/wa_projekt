@@ -4,7 +4,8 @@ import cors from "cors";
 import bcrypt from "bcrypt";
 import bodyParser from "body-parser";
 //import upload from "upload";
-//import multer from 'multer';
+import multer from "multer";
+import fs from "fs";
 
 import Owner from "../models/owner.js";
 import Employee from "../models/employee.js";
@@ -13,7 +14,11 @@ import Fault from "../models/fault.js";
 const app = express();
 const port = 4001;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  })
+);
 app.use(express.json());
 app.use(bodyParser.json());
 
@@ -38,37 +43,37 @@ mongoose
   .catch((error) => console.error("Error connecting to MongoDB: ", error));
 
 const predefinedUsers = async () => {
-  const hashedPassword1 = await bcrypt.hash("abc", 10);
-  const existingEmployee = await Employee.findOne({ username: "Gordan" });
-  if (!existingEmployee) {
+  const employeePassword1 = await bcrypt.hash("abc", 10);
+  const newEmployee1 = await Employee.findOne({ username: "Gordan" });
+  if (!newEmployee1) {
     const employee1 = new Employee({
       username: "Gordan",
-      password: hashedPassword1,
+      password: employeePassword1,
     });
     await employee1.save();
   }
 
-  const hashedPassword2 = await bcrypt.hash("eric", 10);
-  const existingOwner = await Owner.findOne({
+  const ownerPassword1 = await bcrypt.hash("eric", 10);
+  const newOwner1 = await Owner.findOne({
     name: "Eric",
     surname: "Trubilo",
   });
-  if (!existingOwner) {
-    const owner = new Owner({
+  if (!newOwner1) {
+    const owner1 = new Owner({
       name: "Eric",
       surname: "Trubilo",
-      password: hashedPassword2,
+      password: ownerPassword1,
       pool_id: "abc123",
     });
-    await owner.save();
+    await owner1.save();
   }
 
-  const hashedPassword3 = await bcrypt.hash("abcabc", 10);
-  const existingEmployee2 = await Employee.findOne({ username: "Pero" });
-  if (!existingEmployee2) {
+  const employeePassword2 = await bcrypt.hash("abcabc", 10);
+  const newEmployee2 = await Employee.findOne({ username: "Gordan13" });
+  if (!newEmployee2) {
     const employee2 = new Employee({
-      username: "Gordan123",
-      password: hashedPassword3,
+      username: "Gordan13",
+      password: employeePassword2,
     });
     await employee2.save();
   }
@@ -77,6 +82,38 @@ const predefinedUsers = async () => {
 };
 
 predefinedUsers();
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./uploads/");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+
+//const upload = multer({ storage: storage });
+const upload = multer({ dest: "uploads/" });
+
+/*app.post("/login", async (req, res) => {
+  const { username, password, userType } = req.body;
+  let user;
+  if (userType === "employee") {
+    user = await Employee.findOne({ username: username });
+  } else if (userType === "owner") {
+    user = await Owner.findOne({ username: username });
+  } else {
+    return res.status(400).json({ message: "Ne postoji takav korisnik!" });
+  }
+  if (!user) {
+    return res.status(400).json({ message: "Korisnik nije pronađen!" });
+  }
+  const passwordMatch = await bcrypt.compare(password, user.password);
+  if (!passwordMatch) {
+    return res.status(400).json({ message: "Pogrešna lozinka!" });
+  }
+  res.status(200).json({ message: "Login successful!" });
+});*/
 
 app.post("/employee/login", async (req, res) => {
   const { username, password } = req.body;
@@ -102,7 +139,6 @@ app.post("/owner/login", async (req, res) => {
   const owner = await Owner.findOne({
     name: name,
     surname: surname,
-    pool_id: pool_id,
   });
 
   if (!owner) {
@@ -115,97 +151,87 @@ app.post("/owner/login", async (req, res) => {
     return res.status(400).json({ message: "Pogrešna lozinka!" });
   }
 
+  if (owner.pool_id !== pool_id) {
+    return res.status(400).json({ message: "Niste vlasnik tog bazena!" });
+  }
+
   res.status(200).json({ message: "Vlasnik uspješno prijavljen!" });
 });
 
-app.post(
-  "/pool",
-  /*upload.array("picture"),*/ async (req, res) => {
-    const {
+app.post("/pool", upload.array("picture", 3), async (req, res) => {
+  let {
+    employee,
+    name,
+    phLevel,
+    clLevel,
+    cleaningMethods,
+    chemicalsPoured,
+    chemicalsQuantity,
+  } = req.body;
+
+  if (!name || !phLevel || !clLevel || !employee) {
+    return res
+      .status(400)
+      .json({ message: "Sva polja moraju biti popunjena!" });
+  }
+
+  if (cleaningMethods) {
+    cleaningMethods = cleaningMethods.split(",").map((method) => method.trim());
+  } else {
+    cleaningMethods = [];
+  }
+
+  const validCleaningMethods = [
+    "Usisavanje",
+    "Četkanje",
+    "Pranje rubne linije",
+  ];
+
+  if (
+    cleaningMethods.length > 0 &&
+    !cleaningMethods.every((method) => validCleaningMethods.includes(method))
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Morate izabrati valjanu metodu čišćenja!" });
+  }
+
+  if (
+    chemicalsPoured !== "Bez kemije" &&
+    ["PH minus", "PH plus"].indexOf(chemicalsPoured) === -1
+  ) {
+    return res.status(400).json({ message: "Morate izabrati valjanu kemiju!" });
+  }
+
+  try {
+    const pictures = req.files.map((file) => ({
+      data: fs.readFileSync(file.path),
+      contentType: file.mimetype,
+    }));
+
+    const pool = new Pool({
       name,
       phLevel,
       clLevel,
-      cleaningMethod,
+      cleaningMethods,
       chemicalsPoured,
       chemicalsQuantity,
-      username,
-      password,
-    } = req.body;
-
-    if (!name) {
-      return res
-        .status(400)
-        .json({ message: "Ovo polje ne smije biti prazno!" });
-    }
-
-    if (!phLevel) {
-      return res
-        .status(400)
-        .json({ message: "Ovo polje ne smije biti prazno!" });
-    }
-
-    if (!clLevel) {
-      return res
-        .status(400)
-        .json({ message: "Ovo polje ne smije biti prazno!" });
-    }
-
-    if (
-      !cleaningMethod ||
-      ["usisavanje", "četkanje", "pranje rubne linije"].indexOf(
-        cleaningMethod
-      ) === -1
-    ) {
-      return res
-        .status(400)
-        .json({ message: "poruka da treba izabrat valid metodu za ciscenje" });
-    }
-
-    if (
-      !chemicalsPoured ||
-      ["ph minus", "ph plus"].indexOf(chemicalsPoured) === -1
-    ) {
-      return res
-        .status(400)
-        .json({ message: "poruka da treba izabrat valid kemiju" });
-    }
-
-    if (!chemicalsQuantity) {
-      return res.status(400).json({ message: "poruka da ne smije bit prazno" });
-    }
-
-    const employee = await Employee.findOne({
-      username: username,
-      password: password,
+      pictures,
+      employee: employee._id,
     });
 
-    if (!employee) {
-      return res.status(400).json({ message: "Zaposlenik ne postoji!" });
-    }
+    await pool.save();
 
-    try {
-      const pool = new Pool({
-        name,
-        phLevel,
-        clLevel,
-        cleaningMethod,
-        chemicalsPoured,
-        chemicalsQuantity,
-        picture: req.files,
-        employee: employee._id,
-      });
+    req.files.forEach((file) => fs.unlinkSync(file.path));
 
-      await pool.save();
-
-      res
-        .status(200)
-        .json({ message: "Informacije o bazenu uspješno prijavljene!" });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Internal Server Error" });
-    }
+    res
+      .status(200)
+      .json({ message: "Informacije o bazenu uspješno prijavljene!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Došlo je do interne greške na serveru." });
   }
-);
+});
 
 //ovo dolje radi ja msm
 
