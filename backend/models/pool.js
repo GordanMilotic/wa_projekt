@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-const Schema = mongoose.Schema;
+const { Schema } = mongoose;
 
 const poolSchema = new Schema({
   name: String,
@@ -8,8 +8,15 @@ const poolSchema = new Schema({
   cleaningMethod: String,
   chemicalsPoured: String,
   chemicalsQuantity: Number,
-  picture: { data: Buffer, contentType: String },
+  pictures: [
+    {
+      data: Buffer,
+      contentType: String,
+    },
+  ],
+  employee: { type: Schema.Types.ObjectId, ref: "Employee" },
 });
 
 const Pool = mongoose.model("Pool", poolSchema);
+
 export default Pool;
