@@ -2,6 +2,10 @@
   <div class="pool-form">
     <form @submit.prevent="submitForm">
       <div class="form-input text_input">
+        <label>Zaposlenik:</label>
+        <input type="text" v-model="employee" />
+      </div>
+      <div class="form-input text_input">
         <label>Šifra bazena:</label>
         <input type="text" v-model="name" />
       </div>
@@ -13,27 +17,24 @@
         <label>CL razina:</label>
         <input type="text" v-model="clLevel" />
       </div>
-      <label>Tehnike čiščenja:</label>
-      <div
-        class="cleaning-methods"
-        v-for="method in cleaningMethods"
-        :key="method"
-      >
-        <label>
+      <label>Tehnike čišćenja:</label>
+      <div class="cleaning-methods">
+        <div v-for="method in cleaningMethods" :key="method">
           <input
             type="checkbox"
             v-model="cleaningMethod"
             :value="method"
             class="form-checkbox"
           />
-          {{ method }}
-        </label>
+          <label class="method-label">{{ method }}</label>
+        </div>
       </div>
+
       <label class="poured">Doziranje kemije:</label>
       <select v-model="chemicalsPoured" class="form-input">
         <option disabled value="">Please select one</option>
-        <option>PH Minus</option>
-        <option>PH Plus</option>
+        <option>PH minus</option>
+        <option>PH plus</option>
         <option>Bez kemije</option>
       </select>
       <div class="form-input text_input">
@@ -52,10 +53,10 @@
           class="form-input"
         />
         <img
-          :src="picture[index - 1]"
+          :src="picturePreview[index - 1]"
           :alt="'Preview ' + index"
           width="100"
-          v-if="picture[index - 1]"
+          v-if="picturePreview[index - 1]"
         />
       </div>
       <div class="form-buttons">
@@ -72,6 +73,7 @@ import axios from "axios";
 export default {
   data() {
     return {
+      employee: "",
       name: "",
       phLevel: "",
       clLevel: "",
@@ -80,20 +82,22 @@ export default {
       chemicalsPoured: "",
       chemicalsQuantity: "",
       picture: [],
+      picturePreview: [],
     };
   },
   methods: {
     previewImage(index, event) {
       const file = event.target.files[0];
       if (file) {
-        this.picture.splice(index - 1, 1, URL.createObjectURL(file));
+        this.picturePreview.splice(index - 1, 1, URL.createObjectURL(file));
+        this.picture.splice(index - 1, 1, file);
       }
     },
     async submitForm() {
       if (
         isNaN(this.phLevel) ||
         isNaN(this.clLevel) ||
-        isNaN(this.chemicalsQuantity)
+        (this.chemicalsPoured !== "Bez kemije" && isNaN(this.chemicalsQuantity))
       ) {
         alert(
           "Please enter a valid number for PH level, CL level and chemicals quantity."
@@ -101,27 +105,58 @@ export default {
         return;
       }
 
+      const selectedCleaningMethods = [];
+      this.cleaningMethod.forEach((method) => {
+        selectedCleaningMethods.push(method);
+      });
+
       const formData = new FormData();
       formData.append("name", this.name);
       formData.append("phLevel", this.phLevel);
       formData.append("clLevel", this.clLevel);
-      formData.append("cleaningMethod", JSON.stringify(this.cleaningMethod));
-      formData.append("chemicalsPoured", this.chemicalsPoured);
-      formData.append("chemicalsQuantity", this.chemicalsQuantity);
-      this.picture.forEach((pic, index) => {
-        formData.append("picture" + index, pic);
+
+      selectedCleaningMethods.forEach((method) => {
+        formData.append("cleaningMethods", method);
       });
 
-      const response = await axios.post("/pool", formData);
-      console.log(response.data);
-    },
-    async logout() {
+      formData.append("chemicalsPoured", this.chemicalsPoured);
+      formData.append("chemicalsQuantity", this.chemicalsQuantity);
+      formData.append("employee", this.employee);
+
+      this.picture.forEach((file) => {
+        formData.append("picture", file);
+      });
+
       try {
-        await axios.post("http://localhost:4001/employee/logout");
-        this.$router.push("/login");
-      } catch (err) {
-        console.error(err);
+        const response = await axios.post(
+          "http://localhost:4001/pool",
+          formData
+        );
+
+        if (response.status === 200) {
+          alert("Form submitted successfully");
+          this.resetForm();
+        } else {
+          alert(response.data.message);
+        }
+      } catch (error) {
+        console.error(error);
+        alert("An error occurred while submitting the form. Error: " + error);
       }
+    },
+    resetForm() {
+      this.employee = "";
+      this.name = "";
+      this.phLevel = "";
+      this.clLevel = "";
+      this.cleaningMethod = [];
+      this.chemicalsPoured = "";
+      this.chemicalsQuantity = "";
+      this.picture = [];
+      this.picturePreview = [];
+    },
+    logout() {
+      this.$router.push("/employeeLogin");
     },
   },
 };
@@ -186,5 +221,22 @@ export default {
 }
 .poured {
   margin-top: 1em;
+}
+.employee-input {
+  border-color: #4caf50;
+  background-color: #f1f8e9;
+}
+
+.method-label {
+  margin-right: 10px;
+}
+
+.form-checkbox {
+  margin-right: 2.5px;
+}
+
+.cleaning-methods {
+  display: flex;
+  flex-direction: column;
 }
 </style>
