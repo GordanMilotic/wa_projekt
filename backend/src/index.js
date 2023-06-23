@@ -158,91 +158,111 @@ app.post("/owner/login", async (req, res) => {
   res.status(200).json({ message: "Vlasnik uspješno prijavljen!" });
 });
 
-app.post("/pool", upload.array("picture", 3), async (req, res) => {
-  let {
-    employee,
-    name,
-    phLevel,
-    clLevel,
-    cleaningMethods,
-    chemicalsPoured,
-    chemicalsQuantity,
-  } = req.body;
-
-  if (!name || !phLevel || !clLevel || !employee) {
-    return res
-      .status(400)
-      .json({ message: "Sva polja moraju biti popunjena!" });
-  }
-
-  if (cleaningMethods) {
-    cleaningMethods = cleaningMethods.split(",").map((method) => method.trim());
-  } else {
-    cleaningMethods = [];
-  }
-
-  const validCleaningMethods = [
-    "Usisavanje",
-    "Četkanje",
-    "Pranje rubne linije",
-  ];
-
-  if (
-    cleaningMethods.length > 0 &&
-    !cleaningMethods.every((method) => validCleaningMethods.includes(method))
-  ) {
-    return res
-      .status(400)
-      .json({ message: "Morate izabrati valjanu metodu čišćenja!" });
-  }
-
-  if (
-    chemicalsPoured !== "Bez kemije" &&
-    ["PH minus", "PH plus"].indexOf(chemicalsPoured) === -1
-  ) {
-    return res.status(400).json({ message: "Morate izabrati valjanu kemiju!" });
-  }
-
-  try {
-    const pictures = req.files.map((file) => ({
-      data: fs.readFileSync(file.path),
-      contentType: file.mimetype,
-    }));
-
-    const pool = new Pool({
+app.post(
+  "/pool",
+  upload.fields([
+    { name: "startPictures", maxCount: 3 },
+    { name: "endPictures", maxCount: 3 },
+  ]),
+  async (req, res) => {
+    let {
+      username,
       name,
       phLevel,
       clLevel,
+      tabletCount,
       cleaningMethods,
       chemicalsPoured,
       chemicalsQuantity,
-      pictures,
-      employee: employee._id,
-    });
+    } = req.body;
 
-    await pool.save();
+    if (!name || !phLevel || !clLevel || !username) {
+      return res
+        .status(400)
+        .json({ message: "Sva polja moraju biti popunjena!" });
+    }
 
-    req.files.forEach((file) => fs.unlinkSync(file.path));
+    if (tabletCount === "" || isNaN(tabletCount)) {
+      tabletCount = null;
+    }
 
-    res
-      .status(200)
-      .json({ message: "Informacije o bazenu uspješno prijavljene!" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Došlo je do interne greške na serveru." });
+    if (cleaningMethods) {
+      cleaningMethods = cleaningMethods
+        .split(",")
+        .map((method) => method.trim());
+    } else {
+      cleaningMethods = [];
+    }
+
+    const validCleaningMethods = [
+      "Usisavanje",
+      "Četkanje",
+      "Pranje rubne linije",
+    ];
+
+    if (
+      cleaningMethods.length > 0 &&
+      !cleaningMethods.every((method) => validCleaningMethods.includes(method))
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Morate izabrati valjanu metodu čišćenja!" });
+    }
+
+    if (
+      chemicalsPoured !== "Bez kemije" &&
+      ["PH minus", "PH plus"].indexOf(chemicalsPoured) === -1
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Morate izabrati valjanu kemiju!" });
+    }
+
+    try {
+      const startPictures = req.files["startPictures"].map((file) => ({
+        data: fs.readFileSync(file.path),
+        contentType: file.mimetype,
+      }));
+
+      const endPictures = req.files["endPictures"].map((file) => ({
+        data: fs.readFileSync(file.path),
+        contentType: file.mimetype,
+      }));
+
+      const pool = new Pool({
+        username,
+        name,
+        phLevel,
+        clLevel,
+        tabletCount,
+        cleaningMethods,
+        chemicalsPoured,
+        chemicalsQuantity,
+        startPictures,
+        endPictures,
+      });
+
+      await pool.save();
+
+      req.files["startPictures"].forEach((file) => fs.unlinkSync(file.path));
+      req.files["endPictures"].forEach((file) => fs.unlinkSync(file.path));
+
+      res
+        .status(200)
+        .json({ message: "Informacije o bazenu uspješno prijavljene!" });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(500)
+        .json({ message: "Došlo je do interne greške na serveru." });
+    }
   }
-});
+);
 
 //ovo dolje radi ja msm
 
 app.post("/fault", async (req, res) => {
   const { pool, owner, description, dateReported, reportedBy } = req.body;
-
-  const ownerFound = await Owner.findOne({ name: owner });
-
-  if (!ownerFound) {
-    return res.status(400).json({ message: "Vlasnik ne postoji!" });
-  }
 
   try {
     const fault = new Fault({
@@ -258,43 +278,8 @@ app.post("/fault", async (req, res) => {
     res.status(200).json({
       message: "Informacije o kvaru/nedostatku uspješno prijavljene!",
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
-
-//ovo moram probat
-
-app.put("/pool/:id", async (req, res) => {
-  const { id } = req.params;
-  const {
-    name,
-    phLevel,
-    cleaningMethod,
-    chemicalsPoured,
-    chemicalsQuantity,
-    picture,
-  } = req.body;
-
-  try {
-    const pool = await Pool.findById(id);
-    if (!pool) {
-      return res.status(404).json({ message: "Bazen ne postoji!" });
-    }
-
-    pool.name = name;
-    pool.phLevel = phLevel;
-    pool.cleaningMethod = cleaningMethod;
-    pool.chemicalsPoured = chemicalsPoured;
-    pool.chemicalsQuantity = chemicalsQuantity;
-    pool.picture = picture;
-
-    await pool.save();
-
-    res.status(200).json({ message: "Informacije uspješno uređene!" });
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
