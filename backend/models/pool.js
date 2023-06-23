@@ -1,20 +1,27 @@
 import mongoose from "mongoose";
-const { Schema } = mongoose;
+const Schema = mongoose.Schema;
 
 const poolSchema = new Schema({
   name: String,
   phLevel: Number,
   clLevel: Number,
-  cleaningMethod: String,
+  tabletCount: Number,
+  cleaningMethods: [String],
   chemicalsPoured: String,
   chemicalsQuantity: Number,
-  pictures: [
+  startPictures: [
     {
       data: Buffer,
       contentType: String,
     },
   ],
-  employee: { type: Schema.Types.ObjectId, ref: "Employee" },
+  endPictures: [
+    {
+      data: Buffer,
+      contentType: String,
+    },
+  ],
+  username: String,
 });
 
 const Pool = mongoose.model("Pool", poolSchema);
