@@ -3,11 +3,25 @@
     <form @submit.prevent="submitForm">
       <div class="form-input text_input">
         <label>Zaposlenik:</label>
-        <input type="text" v-model="employee" />
+        <input type="text" v-model="username" />
       </div>
       <div class="form-input text_input">
         <label>Šifra bazena:</label>
         <input type="text" v-model="name" />
+      </div>
+      <label>Slike početnog stanja:</label>
+      <div v-for="index in 3" :key="index">
+        <input
+          type="file"
+          @change="previewImage(index, $event, 'start')"
+          class="form-input"
+        />
+        <img
+          :src="startPicturePreview[index - 1]"
+          :alt="'Preview ' + index"
+          width="100"
+          v-if="startPicturePreview[index - 1]"
+        />
       </div>
       <div class="form-input text_input">
         <label>PH razina:</label>
@@ -16,6 +30,10 @@
       <div class="form-input text_input">
         <label>CL razina:</label>
         <input type="text" v-model="clLevel" />
+      </div>
+      <div class="form-input text_input">
+        <label>Broj tableta (200g):</label>
+        <input type="text" v-model="tabletCount" />
       </div>
       <label>Tehnike čišćenja:</label>
       <div class="cleaning-methods">
@@ -29,7 +47,6 @@
           <label class="method-label">{{ method }}</label>
         </div>
       </div>
-
       <label class="poured">Doziranje kemije:</label>
       <select v-model="chemicalsPoured" class="form-input">
         <option disabled value="">Please select one</option>
@@ -45,18 +62,18 @@
           :disabled="chemicalsPoured === 'Bez kemije'"
         />
       </div>
-      <label>Slike:</label>
+      <label>Slike završnog stanja:</label>
       <div v-for="index in 3" :key="index">
         <input
           type="file"
-          @change="previewImage(index, $event)"
+          @change="previewImage(index, $event, 'end')"
           class="form-input"
         />
         <img
-          :src="picturePreview[index - 1]"
+          :src="endPicturePreview[index - 1]"
           :alt="'Preview ' + index"
           width="100"
-          v-if="picturePreview[index - 1]"
+          v-if="endPicturePreview[index - 1]"
         />
       </div>
       <div class="form-buttons">
@@ -73,24 +90,31 @@ import axios from "axios";
 export default {
   data() {
     return {
-      employee: "",
+      username: "",
       name: "",
       phLevel: "",
       clLevel: "",
+      tabletCount: null,
       cleaningMethods: ["Usisavanje", "Četkanje", "Pranje rubne linije"],
       cleaningMethod: [],
       chemicalsPoured: "",
       chemicalsQuantity: "",
-      picture: [],
-      picturePreview: [],
+      startPictures: [],
+      endPictures: [],
+      startPicturePreview: [],
+      endPicturePreview: [],
     };
   },
   methods: {
-    previewImage(index, event) {
+    previewImage(index, event, type) {
       const file = event.target.files[0];
       if (file) {
-        this.picturePreview.splice(index - 1, 1, URL.createObjectURL(file));
-        this.picture.splice(index - 1, 1, file);
+        const previewList =
+          type === "start" ? this.startPicturePreview : this.endPicturePreview;
+        const pictureList =
+          type === "start" ? this.startPictures : this.endPictures;
+        previewList.splice(index - 1, 1, URL.createObjectURL(file));
+        pictureList.splice(index - 1, 1, file);
       }
     },
     async submitForm() {
@@ -100,7 +124,7 @@ export default {
         (this.chemicalsPoured !== "Bez kemije" && isNaN(this.chemicalsQuantity))
       ) {
         alert(
-          "Please enter a valid number for PH level, CL level and chemicals quantity."
+          "Please enter a valid number for PH level, CL level, and chemicals quantity."
         );
         return;
       }
@@ -114,6 +138,7 @@ export default {
       formData.append("name", this.name);
       formData.append("phLevel", this.phLevel);
       formData.append("clLevel", this.clLevel);
+      formData.append("tabletCount", this.tabletCount);
 
       selectedCleaningMethods.forEach((method) => {
         formData.append("cleaningMethods", method);
@@ -121,10 +146,14 @@ export default {
 
       formData.append("chemicalsPoured", this.chemicalsPoured);
       formData.append("chemicalsQuantity", this.chemicalsQuantity);
-      formData.append("employee", this.employee);
+      formData.append("username", this.username);
 
-      this.picture.forEach((file) => {
-        formData.append("picture", file);
+      this.startPictures.forEach((file) => {
+        formData.append("startPictures", file);
+      });
+
+      this.endPictures.forEach((file) => {
+        formData.append("endPictures", file);
       });
 
       try {
@@ -145,15 +174,18 @@ export default {
       }
     },
     resetForm() {
-      this.employee = "";
+      this.username = "";
       this.name = "";
       this.phLevel = "";
       this.clLevel = "";
+      this.tabletCount = "";
       this.cleaningMethod = [];
       this.chemicalsPoured = "";
       this.chemicalsQuantity = "";
-      this.picture = [];
-      this.picturePreview = [];
+      this.startPictures = [];
+      this.endPictures = [];
+      this.startPicturePreview = [];
+      this.endPicturePreview = [];
     },
     logout() {
       this.$router.push("/employeeLogin");
