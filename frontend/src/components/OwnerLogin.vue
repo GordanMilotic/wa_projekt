@@ -1,35 +1,31 @@
 <template>
   <div class="container">
     <div class="type_of_login">
-      <button class="userType_button" @click="userType = 'employee'">
+      <button class="userType_button" @click="setUserType('employee')">
         ZAPOSLENIK
       </button>
-      <button class="userType_button" @click="userType = 'owner'">
+      <button class="userType_button" @click="setUserType('owner')">
         VLASNIK
       </button>
     </div>
     <h2>Prijavite se sa svojim računom</h2>
     <form @submit.prevent="submitForm">
       <div v-if="userType === 'owner'">
-        <div class="text_input">
-          <input type="text" placeholder="Ime" v-model="name" />
-        </div>
-        <div class="text_input">
-          <input type="text" placeholder="Prezime" v-model="surname" />
-        </div>
-        <div class="text_input">
-          <input type="text" placeholder="ID bazena" v-model="pool_id" />
-        </div>
-        <div class="text_input">
-          <input type="password" placeholder="Lozinka" v-model="password" />
+        <div v-for="field in ownerFields" :key="field" class="text_input">
+          <input
+            :type="field.type"
+            :placeholder="field.placeholder"
+            v-model="formData[field.name]"
+          />
         </div>
       </div>
       <div v-if="userType === 'employee'">
-        <div class="text_input">
-          <input type="text" placeholder="Korisničko ime" v-model="username" />
-        </div>
-        <div class="text_input">
-          <input type="password" placeholder="Lozinka" v-model="password" />
+        <div v-for="field in employeeFields" :key="field" class="text_input">
+          <input
+            :type="field.type"
+            :placeholder="field.placeholder"
+            v-model="formData[field.name]"
+          />
         </div>
       </div>
       <div class="button">
@@ -38,40 +34,37 @@
     </form>
   </div>
 </template>
-
 <script>
 import axios from "axios";
 
 export default {
   data() {
     return {
-      username: "",
-      password: "",
-      name: "",
-      surname: "",
-      pool_id: "",
+      formData: {},
       userType: "owner",
+      ownerFields: [
+        { name: "name", type: "text", placeholder: "Ime" },
+        { name: "surname", type: "text", placeholder: "Prezime" },
+        { name: "pool_id", type: "text", placeholder: "ID bazena" },
+        { name: "password", type: "password", placeholder: "Lozinka" },
+      ],
+      employeeFields: [
+        { name: "username", type: "text", placeholder: "Korisničko ime" },
+        { name: "password", type: "password", placeholder: "Lozinka" },
+      ],
     };
   },
   methods: {
+    setUserType(type) {
+      this.userType = type;
+    },
     async submitForm() {
       try {
-        const payload = { username: this.username, password: this.password };
-
-        let response;
-        if (this.userType === "employee") {
-          response = await axios.post(
-            `http://localhost:4001/employee/login`,
-            payload
-          );
-        } else {
-          response = await axios.post(`http://localhost:4001/owner/login`, {
-            name: this.name,
-            surname: this.surname,
-            password: this.password,
-            pool_id: this.pool_id,
-          });
-        }
+        const url =
+          this.userType === "employee"
+            ? "http://localhost:4001/employee/login"
+            : "http://localhost:4001/owner/login";
+        const response = await axios.post(url, this.formData);
 
         if (response.data.message === "Zaposlenik uspješno prijavljen!") {
           this.$router.push("/employeeForm");
@@ -89,7 +82,6 @@ export default {
   },
 };
 </script>
-
 <style scoped>
 .container {
   width: 300px;

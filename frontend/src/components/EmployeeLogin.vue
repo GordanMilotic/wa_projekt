@@ -1,10 +1,10 @@
 <template>
   <div class="container">
     <div class="type_of_login">
-      <button class="userType_button" @click="userType = 'employee'">
+      <button class="userType_button" @click="setUserType('employee')">
         ZAPOSLENIK
       </button>
-      <button class="userType_button" @click="userType = 'owner'">
+      <button class="userType_button" @click="setUserType('owner')">
         VLASNIK
       </button>
     </div>
@@ -12,24 +12,44 @@
     <form @submit.prevent="submitForm">
       <div v-if="userType === 'owner'">
         <div class="text_input">
-          <input type="text" placeholder="Ime" v-model="name" />
+          <input type="text" placeholder="Ime" v-model="credentials.name" />
         </div>
         <div class="text_input">
-          <input type="text" placeholder="Prezime" v-model="surname" />
+          <input
+            type="text"
+            placeholder="Prezime"
+            v-model="credentials.surname"
+          />
         </div>
         <div class="text_input">
-          <input type="text" placeholder="ID bazena" v-model="pool_id" />
+          <input
+            type="text"
+            placeholder="ID bazena"
+            v-model="credentials.pool_id"
+          />
         </div>
         <div class="text_input">
-          <input type="password" placeholder="Lozinka" v-model="password" />
+          <input
+            type="password"
+            placeholder="Lozinka"
+            v-model="credentials.password"
+          />
         </div>
       </div>
       <div v-if="userType === 'employee'">
         <div class="text_input">
-          <input type="text" placeholder="Korisničko ime" v-model="username" />
+          <input
+            type="text"
+            placeholder="Korisničko ime"
+            v-model="credentials.username"
+          />
         </div>
         <div class="text_input">
-          <input type="password" placeholder="Lozinka" v-model="password" />
+          <input
+            type="password"
+            placeholder="Lozinka"
+            v-model="credentials.password"
+          />
         </div>
       </div>
       <div class="button">
@@ -38,39 +58,39 @@
     </form>
   </div>
 </template>
-
 <script>
 import axios from "axios";
 
 export default {
   data() {
     return {
-      username: "",
-      password: "",
-      name: "",
-      surname: "",
-      pool_id: "",
+      credentials: {
+        username: "",
+        password: "",
+        name: "",
+        surname: "",
+        pool_id: "",
+      },
       userType: "employee",
     };
   },
   methods: {
+    setUserType(type) {
+      this.userType = type;
+    },
     async submitForm() {
       try {
-        const payload = { username: this.username, password: this.password };
-
         let response;
         if (this.userType === "employee") {
           response = await axios.post(
-            `http://localhost:4001/employee/login`,
-            payload
+            "http://localhost:4001/employee/login",
+            this.credentials
           );
         } else {
-          response = await axios.post(`http://localhost:4001/owner/login`, {
-            name: this.name,
-            surname: this.surname,
-            password: this.password,
-            pool_id: this.pool_id,
-          });
+          response = await axios.post(
+            "http://localhost:4001/owner/login",
+            this.credentials
+          );
         }
 
         if (response.data.message === "Zaposlenik uspješno prijavljen!") {
@@ -89,7 +109,6 @@ export default {
   },
 };
 </script>
-
 <style scoped>
 .container {
   width: 300px;
