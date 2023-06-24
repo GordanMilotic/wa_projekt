@@ -1,45 +1,17 @@
 <template>
   <div class="fault-form pool-form">
     <form @submit.prevent="submitFault">
-      <div class="form-input">
-        <label for="pool">Šifra bazena</label>
-        <input id="pool" v-model="fault.pool" type="text" required />
-      </div>
-      <div class="form-input">
-        <label for="owner">Vlasnik</label>
-        <input id="owner" v-model="fault.owner" type="text" required />
-      </div>
-      <div class="form-input">
-        <label for="description">Opis kvara/nedostatka</label>
+      <div v-for="field in faultFields" :key="field.name" class="form-input">
+        <label :for="field.id">{{ field.label }}</label>
         <input
-          id="description"
-          v-model="fault.description"
-          type="text"
-          required
-        />
-      </div>
-      <div class="form-input">
-        <label for="dateReported">Datum prijave</label>
-        <input
-          id="dateReported"
-          v-model="fault.dateReported"
-          type="text"
-          required
-        />
-      </div>
-      <div class="form-input">
-        <label for="reportedBy">Prijavljeno od</label>
-        <input
-          id="reportedBy"
-          v-model="fault.reportedBy"
-          type="text"
+          v-model="fault[field.name]"
+          :id="field.id"
+          :type="field.type"
           required
         />
       </div>
       <div class="form-buttons">
-        <button class="submit-button" type="submit">
-          Podnesi kvar/nedostatak
-        </button>
+        <button class="submit-button" type="submit">Podnesi kvar</button>
         <button class="submit-button logout-button" @click.prevent="logout">
           Odjavi se
         </button>
@@ -47,7 +19,6 @@
     </form>
   </div>
 </template>
-
 <script>
 import axios from "axios";
 
@@ -61,20 +32,57 @@ export default {
         dateReported: "",
         reportedBy: "",
       },
+      faultFields: [
+        { name: "pool", id: "pool", label: "Šifra bazena", type: "text" },
+        { name: "owner", id: "owner", label: "Vlasnik", type: "text" },
+        {
+          name: "description",
+          id: "description",
+          label: "Opis kvara/nedostatka",
+          type: "text",
+        },
+        {
+          name: "dateReported",
+          id: "dateReported",
+          label: "Datum prijave",
+          type: "text",
+        },
+        {
+          name: "reportedBy",
+          id: "reportedBy",
+          label: "Prijavljeno od",
+          type: "text",
+        },
+      ],
     };
   },
   methods: {
     async submitFault() {
-      const response = await axios.post("/fault", this.fault);
-      if (response.data.message === "Fault information saved successfully!") {
-        this.fault = {
-          pool: "",
-          owner: "",
-          description: "",
-          dateReported: "",
-          reportedBy: "",
-        };
+      try {
+        const response = await axios.post(
+          "http://localhost:4001/fault",
+          this.fault
+        );
+        if (
+          response.data.message ===
+          "Informacije o kvaru/nedostatku uspješno prijavljene!"
+        ) {
+          this.resetForm();
+          alert("Kvar uspješno prijavljen!");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Došlo je do pogreške prilikom slanja kvara.");
       }
+    },
+    resetForm() {
+      this.fault = {
+        pool: "",
+        owner: "",
+        description: "",
+        dateReported: "",
+        reportedBy: "",
+      };
     },
     logout() {
       this.$router.push("/ownerLogin");
@@ -82,7 +90,6 @@ export default {
   },
 };
 </script>
-
 <style scoped>
 .pool-form {
   background-color: #fff;
@@ -127,6 +134,10 @@ export default {
 
 .submit-button:hover {
   background-color: #1060a3;
+}
+
+.logout-button:hover {
+  background-color: #b40412;
 }
 
 .logout-button {

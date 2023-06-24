@@ -40,7 +40,7 @@
         <div v-for="method in cleaningMethods" :key="method">
           <input
             type="checkbox"
-            v-model="cleaningMethod"
+            v-model="selectedCleaningMethods"
             :value="method"
             class="form-checkbox"
           />
@@ -76,9 +76,13 @@
           v-if="endPicturePreview[index - 1]"
         />
       </div>
+      <div class="form-input text_input">
+        <label>Napomena:</label>
+        <input type="text" v-model="napomena" />
+      </div>
       <div class="form-buttons">
         <button type="submit" class="submit-button">Podnesi</button>
-        <button @click.prevent="logout" class="logout-button">Log out</button>
+        <button @click.prevent="logout" class="logout-button">Odjavi se</button>
       </div>
     </form>
   </div>
@@ -96,13 +100,14 @@ export default {
       clLevel: "",
       tabletCount: null,
       cleaningMethods: ["Usisavanje", "Četkanje", "Pranje rubne linije"],
-      cleaningMethod: [],
+      selectedCleaningMethods: [],
       chemicalsPoured: "",
       chemicalsQuantity: "",
       startPictures: [],
       endPictures: [],
       startPicturePreview: [],
       endPicturePreview: [],
+      napomena: "",
     };
   },
   methods: {
@@ -129,24 +134,20 @@ export default {
         return;
       }
 
-      const selectedCleaningMethods = [];
-      this.cleaningMethod.forEach((method) => {
-        selectedCleaningMethods.push(method);
-      });
-
       const formData = new FormData();
       formData.append("name", this.name);
       formData.append("phLevel", this.phLevel);
       formData.append("clLevel", this.clLevel);
       formData.append("tabletCount", this.tabletCount);
 
-      selectedCleaningMethods.forEach((method) => {
+      this.selectedCleaningMethods.forEach((method) => {
         formData.append("cleaningMethods", method);
       });
 
       formData.append("chemicalsPoured", this.chemicalsPoured);
       formData.append("chemicalsQuantity", this.chemicalsQuantity);
       formData.append("username", this.username);
+      formData.append("napomena", this.napomena);
 
       this.startPictures.forEach((file) => {
         formData.append("startPictures", file);
@@ -179,13 +180,14 @@ export default {
       this.phLevel = "";
       this.clLevel = "";
       this.tabletCount = "";
-      this.cleaningMethod = [];
+      this.selectedCleaningMethods = [];
       this.chemicalsPoured = "";
       this.chemicalsQuantity = "";
       this.startPictures = [];
       this.endPictures = [];
       this.startPicturePreview = [];
       this.endPicturePreview = [];
+      this.napomena = "";
     },
     logout() {
       this.$router.push("/employeeLogin");
@@ -230,9 +232,6 @@ export default {
   transition: background-color 0.3s ease;
   display: inline-block;
 }
-.submit-button:hover {
-  background-color: #1060a3;
-}
 .logout-button {
   background-color: #e74c3c;
   color: #fff;
@@ -243,8 +242,11 @@ export default {
   transition: background-color 0.3s ease;
   display: inline-block;
 }
+.submit-button:hover {
+  background-color: #1060a3;
+}
 .logout-button:hover {
-  background-color: #c0392b;
+  background-color: #b40412;
 }
 .pool-form img {
   display: block;
@@ -254,19 +256,12 @@ export default {
 .poured {
   margin-top: 1em;
 }
-.employee-input {
-  border-color: #4caf50;
-  background-color: #f1f8e9;
-}
-
 .method-label {
   margin-right: 10px;
 }
-
 .form-checkbox {
   margin-right: 2.5px;
 }
-
 .cleaning-methods {
   display: flex;
   flex-direction: column;
