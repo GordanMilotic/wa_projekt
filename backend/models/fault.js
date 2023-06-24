@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 
-const faultSchema = new mongoose.Schema({
+const faultSchema = new Schema({
   pool: String,
   owner: String,
   description: String,

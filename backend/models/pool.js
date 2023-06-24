@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
-const Schema = mongoose.Schema;
 
-const poolSchema = new Schema({
+const poolSchema = new mongoose.Schema({
   name: String,
   phLevel: Number,
   clLevel: Number,
@@ -22,8 +21,7 @@ const poolSchema = new Schema({
     },
   ],
   username: String,
+  napomena: String,
 });
-
 const Pool = mongoose.model("Pool", poolSchema);
-
 export default Pool;
