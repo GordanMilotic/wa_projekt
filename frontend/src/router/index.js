@@ -2,14 +2,26 @@ import { createRouter, createWebHistory } from "vue-router";
 import Login from "../views/Login.vue";
 import EmployeeForm from "../views/EmployeeForm.vue";
 import OwnerForm from "../views/OwnerForm.vue";
+import EmployeeLogin from "../components/EmployeeLogin.vue";
+import OwnerLogin from "../components/OwnerLogin.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: "/login",
+      path: "/",
       name: "login",
-      component: Login,
+      component: EmployeeLogin,
+    },
+    {
+      path: "/employeeLogin",
+      name: "employeeLogin",
+      component: EmployeeLogin,
+    },
+    {
+      path: "/ownerLogin",
+      name: "ownerLogin",
+      component: OwnerLogin,
     },
     {
       path: "/employeeForm",
@@ -21,14 +33,6 @@ const router = createRouter({
       name: "ownerForm",
       component: OwnerForm,
     },
-    /*{
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      // component: () => import('../views/AboutView.vue')
-    }*/
   ],
 });
 
